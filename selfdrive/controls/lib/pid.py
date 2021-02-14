@@ -28,6 +28,7 @@ class LatPIDController():
     self.i_rate = 1.0 / rate
     self.sat_limit = sat_limit
     self.convert = convert
+    self.op_params = opParams()
 
     self.reset()
 
@@ -67,19 +68,23 @@ class LatPIDController():
   def update(self, setpoint, measurement, speed=0.0, check_saturation=True, override=False, feedforward=0., deadzone=0., freeze_integrator=False):
     self.speed = speed
 
+    gain_multiplier = 1.
+    if ((measurement > 0 and setpoint < measurement) or (measurement < 0 and setpoint > measurement)) and abs(measurement) > self.op_params.get('min_angle'):
+      gain_multiplier = self.op_params.get('gain_multiplier')
+
     error = float(apply_deadzone(setpoint - measurement, deadzone))
-    self.p = error * self.k_p
-    self.f = feedforward * self.k_f
+    self.p = error * self.k_p * gain_multiplier
+    self.f = feedforward * self.k_f * gain_multiplier
 
     d = 0
     if len(self.errors) >= 5:  # makes sure list is long enough
       d = (error - self.errors[-5]) / 5  # get deriv in terms of 100hz (tune scale doesn't change)
-      d *= self.k_d
+      d *= self.k_d * gain_multiplier
 
     if override:
       self.i -= self.i_unwind_rate * float(np.sign(self.i))
     else:
-      i = self.i + error * self.k_i * self.i_rate
+      i = self.i + error * self.k_i * self.i_rate * gain_multiplier
       control = self.p + self.f + i + d
 
       if self.convert is not None:

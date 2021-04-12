@@ -47,15 +47,15 @@ class LatControlPID():
       deadzone = 0.0
 
       check_saturation = (CS.vEgo > 10) and not CS.steeringRateLimited and not CS.steeringPressed
-      # output_steer = self.pid.update(self.angle_steers_des, CS.steeringAngleDeg, check_saturation=check_saturation, override=CS.steeringPressed,
-      #                                feedforward=steer_feedforward, speed=CS.vEgo, deadzone=deadzone)
+      output_steer = self.pid.update(self.angle_steers_des, CS.steeringAngleDeg, check_saturation=check_saturation, override=CS.steeringPressed,
+                                     feedforward=steer_feedforward, speed=CS.vEgo, deadzone=deadzone)
 
-      rate_des = lat_plan.steeringRateDeg if self.op_params.get('model_use_des_rate') else 0
-      rate = CS.steeringRateDeg if self.op_params.get('model_use_rate') else 0
-      model_input = [self.angle_steers_des, CS.steeringAngleDeg, rate_des, rate, CS.vEgo]
-
-      output_steer = model_predict(model_input)[0]
-      output_steer = float(clip(output_steer, -1, 1))
+      # rate_des = lat_plan.steeringRateDeg if self.op_params.get('model_use_des_rate') else 0
+      # rate = CS.steeringRateDeg if self.op_params.get('model_use_rate') else 0
+      # model_input = [self.angle_steers_des, CS.steeringAngleDeg, rate_des, rate, CS.vEgo]
+      #
+      # output_steer = model_predict(model_input)[0]
+      # output_steer = float(clip(output_steer, -1, 1))
       pid_log.active = True
       pid_log.p = self.pid.p
       pid_log.i = self.pid.i

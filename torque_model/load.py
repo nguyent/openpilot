@@ -265,7 +265,7 @@ def load_data(to_normalize=False, plot_dists=False):  # filters and processes ra
   ADD_SYNTHETIC_SAMPLES = True  # fixme, this affects mean and std, but not min/max for normalizing
   if ADD_SYNTHETIC_SAMPLES:
 
-    n_synthetic_samples = round(len(data) / 14)
+    n_synthetic_samples = round(len(data) / 10)
     print('There are currently {} real samples'.format(len(data)))
     print('Adding {} synthetic samples...'.format(n_synthetic_samples), flush=True)
     data += data_generator.generate_many(n_synthetic_samples)

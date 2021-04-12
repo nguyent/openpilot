@@ -1,3 +1,4 @@
+import copy
 import random
 # from tensorflow import keras
 from common.numpy_fast import interp
@@ -14,7 +15,7 @@ for stat_k, data_keys in STATS_KEYS.items():
 
 
 MODEL_INPUTS = ['fut_steering_angle', 'steering_angle', 'fut_steering_rate', 'steering_rate', 'v_ego']
-# inputs = ['fut_steering_angle', 'steering_angle', 'v_ego']
+# MODEL_INPUTS = ['fut_steering_angle', 'steering_angle', 'v_ego']
 
 
 def unnormalize_sample(_sample, _stats):
@@ -39,10 +40,16 @@ def normalize_value(_v, _type, _stats, _normalize):
 
 
 def feedforward(angle, speed):
-  steer_feedforward = float(angle)  # offset does not contribute to resistive torque
+  steer_feedforward = copy.deepcopy(angle)  # offset does not contribute to resistive torque
   _c1, _c2, _c3 = 0.35189607550172824, 7.506201251644202, 69.226826411091
   steer_feedforward *= _c1 * speed ** 2 + _c2 * speed + _c3
   # steer_feedforward *= speed ** 2
+  return steer_feedforward
+
+
+def standard_feedforward(angle, speed):
+  steer_feedforward = copy.deepcopy(angle)  # offset does not contribute to resistive torque
+  steer_feedforward *= speed ** 2
   return steer_feedforward
 
 
@@ -56,8 +63,8 @@ def model_feedforward(angle, speed):
 
 class LatControlPF:
   def __init__(self):
-    self.k_f = 0.00006908923778520113
-    # self.k_f = 0.00003
+    # self.k_f = 0.00006908923778520113
+    self.k_f = 0.00005
     self.speed = 0
 
   @property
@@ -67,12 +74,13 @@ class LatControlPF:
   def update(self, setpoint, measurement, speed):
     self.speed = speed
     f = feedforward(setpoint, speed)
+    # f = standard_feedforward(setpoint, speed)
     # f = model_feedforward(setpoint, speed)
 
     error = setpoint - measurement
 
     p = error * self.k_p
-    f = f * self.k_f
+    f = f * 3.768382789259873e-05  # self.k_f
 
     return p + f  # multiply by 1500 to get torque units
     # return np.clip(p + steer_feedforward, -1, 1)  # multiply by 1500 to get torque units

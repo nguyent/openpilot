@@ -76,7 +76,7 @@ class LatPIDController():
 
     weight = np.interp(self.speed * CV.MS_TO_MPH, [15, 40], [0.25, 1])
     pid = (new_pid * weight) + ((1 - weight) * pid)
-    return pid
+    return float(pid)
 
   # def convert_pid_gains(self, setpoint, measurement, error, pid):
   #   _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10 = [0.010969681918287285, -1.317303952625088, 0.003090297042995128, 0.0006174063280014462, -0.11408303431617882, -0.004223466361442405, 0.5459159299542625, -0.4208442440715394, -0.016940226962729534, 1.1968717444641879]

@@ -51,8 +51,8 @@ def filter_data(_data):
   keep_distribution = {'engaged': 100, 'user': 50}
 
   def sample_ok(_line):
-    return 1 * CV.MPH_TO_MS < _line['v_ego'] and abs(_line['steering_rate']) < 150 and \
-           abs(_line['fut_steering_rate']) < 200 and abs(_line['torque_eps'] + _line['torque_driver']) < 3000
+    return 1 * CV.MPH_TO_MS < _line['v_ego'] and abs(_line['steering_rate']) < 35 and \
+           abs(_line['fut_steering_rate']) < 70 and abs(_line['torque_eps'] + _line['torque_driver']) < 3000
 
   filtered_sequences = []
   for sequence in _data:
@@ -96,7 +96,8 @@ def even_out_torque(_data):
   return new_data
 
 def plot_distributions(_data, idx=0):
-  # key_lists = {k: [line[k] for line in _data] for k in STATS_KEYS}
+  if idx in [0, 1, 2]:
+    return
   key_lists = {}
   for stat_k, data_keys in STATS_KEYS.items():
     key_lists[stat_k] = []
@@ -113,6 +114,8 @@ def plot_distributions(_data, idx=0):
     plt.clf()
     sns.distplot(key_lists[key], bins=bins, kde=kde)
     plt.savefig('plots/{} dist.{}.png'.format(key, idx))
+    if key == 'angle_error':
+      raise Exception
     # if key == 'torque':
     #   raise Exception
 
@@ -188,7 +191,7 @@ class SyntheticDataGenerator:
       return _sample
 
     sample = _gen()
-    while abs(sample['torque']) > self.torque_range[1] or abs(sample['torque']) < self.torque_range[0] or sample['angle_error'] < 5 or sample['angle_error'] > 15:
+    while abs(sample['torque']) > self.torque_range[1] or abs(sample['torque']) < self.torque_range[0] or sample['angle_error'] < 10 or sample['angle_error'] > 20:
       sample = _gen()
     return sample
     # this was fairly accurate, but the above will automatically change with the data (no manual tuning required)
@@ -242,17 +245,16 @@ def load_data(to_normalize=False, plot_dists=False):  # filters and processes ra
     # elif random_chance(interp(line['torque'], [-471, -105, 95, 194, 494], [100, 40 / 2, 35 / 2, 45 / 2, 100])):
     #   filtered_data_new.append(line)
 
-    if abs(line['steering_angle']) > 90:
+    if abs(line['steering_angle']) >= 50:
       filtered_data_new.append(line)
-    elif random_chance(interp(abs(line['steering_angle']), [0, 45, 90], [25, 75, 100])):
+    # elif random_chance(interp(abs(line['steering_angle']), [0, 15, 35], [5, 80, 100])):
+    elif random_chance(interp(abs(line['steering_angle']), [0, 35, 50], [2.5, 20, 100])):
       filtered_data_new.append(line)
   data = filtered_data_new
   del filtered_data_new
-
-  data = even_out_torque(data)  # there's more left angled samples than right for some reason
-
-
   print('Removed inliers: {} samples'.format(len(data)))
+
+  # data = even_out_torque(data)  # there's more left angled samples than right for some reason
 
   data_stats = get_stats(data)  # get stats about final filtered data
 
@@ -308,10 +310,25 @@ def load_data(to_normalize=False, plot_dists=False):  # filters and processes ra
 
 if __name__ == "__main__":
   data, data_sequences, data_stats, data_generator = load_data(plot_dists=True)
-  # plt.plot([line['steering_angle'] for line in data_sequences[3]])
-  #
-  # raise Exception
-  del data_sequences
+
+  seq = data_sequences[67]
+  calc_rates = []
+  period = round(0.1 * 100)
+  for idx, line in enumerate(seq):
+    if idx > period:
+      calc_rates.append(round((line['steering_angle'] - seq[idx - period]['steering_angle']) * (100 / period)))
+    else:
+      calc_rates.append(0)
+
+  print([{idx: len(seq)} for idx, seq in enumerate(data_sequences)])
+  plt.plot([line['steering_rate'] for line in seq], 'o-', label='rate signal (no frac)')
+  plt.plot([line['steering_angle'] for line in seq], label='angle')
+  # plt.plot([line['steering_rate'] + line['steering_rate_fraction'] for line in seq], label='rate + frac')
+  plt.plot(calc_rates, 'o-', label='calculated rate over {} samples'.format(period))
+  plt.legend()
+
+  raise Exception
+  # del data_sequences
 
   plt.clf()
   print(f'stats rate mean, std: {data_stats["torque"].mean, data_stats["rate"].std}')

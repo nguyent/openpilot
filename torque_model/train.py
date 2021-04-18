@@ -74,41 +74,41 @@ print(f'Output (torque) min/max: {[min(y_train), max(y_train)]}')
 x_train = np.array(x_train)
 y_train = np.array(y_train) / TORQUE_SCALE
 
-x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.35)
+x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.25)
 print('Training on {} samples and validating on {} samples'.format(len(x_train), len(x_test)))
 
 
-model = load_model('models/fifth_model.h5', custom_objects={'LeakyReLU': LeakyReLU})
+# model = load_model('models/fifth_model.h5', custom_objects={'LeakyReLU': LeakyReLU})
 
-# model = Sequential()
-# model.add(Input(shape=x_train.shape[1:]))
-# model.add(Dense(8, activation=LeakyReLU()))
-# # model.add(Dropout(1/8))
-# model.add(Dense(16, activation=LeakyReLU()))
-# # model.add(Dropout(1/16))
-# # model.add(Dense(24, activation=LeakyReLU()))
-# model.add(Dense(1))
-#
-# epochs = 150
-# starting_lr = .01
-# ending_lr = 0.001
-# decay = (starting_lr - ending_lr) / epochs
-#
-# opt = Adam(learning_rate=starting_lr, amsgrad=True, decay=decay)
-# # opt = Adadelta(learning_rate=0.001)
-# # opt = Adagrad(learning_rate=0.2)
-# model.compile(opt, loss='mae', metrics='mse')
-# try:
-#   model.fit(x_train, y_train, batch_size=2048, epochs=100, validation_data=(x_test, y_test))
-#   model.fit(x_train, y_train, batch_size=32, epochs=50, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=128, epochs=25, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=32, epochs=25, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=256, epochs=10, validation_data=(x_test, y_test))
-#   # model.fit(x_train, y_train, batch_size=64, epochs=20, validation_data=(x_test, y_test))
-# except KeyboardInterrupt:
-#   pass
+model = Sequential()
+model.add(Input(shape=x_train.shape[1:]))
+model.add(Dense(8, activation=LeakyReLU()))
+# model.add(Dropout(1/8))
+model.add(Dense(16, activation=LeakyReLU()))
+# model.add(Dropout(1/16))
+# model.add(Dense(24, activation=LeakyReLU()))
+model.add(Dense(1))
+
+epochs = 150
+starting_lr = .005
+ending_lr = 0.001
+decay = (starting_lr - ending_lr) / epochs
+
+opt = Adam(learning_rate=starting_lr, amsgrad=True, decay=decay)
+# opt = Adadelta(learning_rate=0.001)
+# opt = Adagrad(learning_rate=0.2)
+model.compile(opt, loss='mae', metrics='mse')
+try:
+  model.fit(x_train, y_train, batch_size=1024, epochs=100, validation_data=(x_test, y_test))
+  model.fit(x_train, y_train, batch_size=32, epochs=50, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=128, epochs=25, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=32, epochs=25, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=64, epochs=100, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=256, epochs=10, validation_data=(x_test, y_test))
+  # model.fit(x_train, y_train, batch_size=64, epochs=20, validation_data=(x_test, y_test))
+except KeyboardInterrupt:
+  pass
 
 pid = LatControlPF()
 
@@ -121,6 +121,13 @@ def plot_response(angle=15, around=15, speed=37, _pid=pid):  # plots model outpu
   error = np.array(desired) - angle
   rate = normalize_value(0, 'rate', data_stats, to_normalize)
   speed *= CV.MPH_TO_MS
+
+  similar_data = [line for line in data if abs(line['steering_angle'] - angle) < 5 and abs(line['v_ego'] - speed) < 5]
+  # for line in similar_data:
+  #   line['error'] =
+  data_error = [line['fut_steering_angle'] - line['steering_angle'] for line in similar_data]
+  data_torque = [line['torque'] for line in similar_data]
+
   y_pid = []
   y_pid_new = []
   y_model = []
@@ -132,6 +139,7 @@ def plot_response(angle=15, around=15, speed=37, _pid=pid):  # plots model outpu
   plt.plot(error, y_pid, label='standard pf controller')
   plt.plot(error, y_pid_new, label='new pf controller')
   plt.plot(error, y_model, label='model')
+  plt.scatter(data_error, data_torque, label='data', s=1)
   plt.plot([0] * len(y_pid), np.linspace(max(y_model), min(y_model), len(y_pid)))
   plt.xlabel('angle error')
   plt.ylabel('torque')
@@ -296,8 +304,8 @@ def plot_sequence(sequence_idx=3, show_controller=True, _pid=pid):  # plots what
     controller = [pid.update(line['fut_steering_angle'], line['steering_angle'], line['v_ego']) * TORQUE_SCALE for line in sequence]  # what a pf controller would output
     plt.plot(controller, linestyle=':', label='standard controller')
 
-    controller_v2 = [_pid.update(line['fut_steering_angle'], line['steering_angle'], line['v_ego']) * TORQUE_SCALE for line in sequence]  # what a pf controller would output
-    plt.plot(controller_v2, color='purple', label='new controller')
+    # controller_v2 = [_pid.update(line['fut_steering_angle'], line['steering_angle'], line['v_ego']) * TORQUE_SCALE for line in sequence]  # what a pf controller would output
+    # plt.plot(controller_v2, color='purple', label='new controller')
 
   plt.legend()
   plt.show()

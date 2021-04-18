@@ -29,7 +29,9 @@ def load_and_process_rlogs(lrs, file_name):
       ("STEER_TORQUE_DRIVER", "STEER_TORQUE_SENSOR", 0),
       ("STEER_TORQUE_EPS", "STEER_TORQUE_SENSOR", 0),
       ("STEER_RATE_FRACTION", "STEER_ANGLE_SENSOR", 0),
+      ("STEER_FRACTION", "STEER_ANGLE_SENSOR", 0),
       ("STEER_RATE", "STEER_ANGLE_SENSOR", 0),
+      ("STEER_ANGLE", "STEER_ANGLE_SENSOR", 0),
     ]
     cp = CANParser("toyota_corolla_2017_pt_generated", signals)
 
@@ -62,8 +64,10 @@ def load_and_process_rlogs(lrs, file_name):
       torque_driver = cp.vl['STEER_TORQUE_SENSOR']['STEER_TORQUE_DRIVER']
       steer_req = cp.vl['STEERING_LKA']['STEER_REQUEST'] == 1
 
-      steering_rate = cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE'] + cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
-      # steering_rate_fraction = cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
+      steering_rate = cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE']  # + cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
+      steering_fraction = cp.vl['STEER_ANGLE_SENSOR']['STEER_FRACTION']  # + cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
+      steering_angle_can = cp.vl['STEER_ANGLE_SENSOR']['STEER_ANGLE']  # + cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
+      steering_rate_fraction = cp.vl['STEER_ANGLE_SENSOR']['STEER_RATE_FRACTION']
 
       if msg.which() != 'can':  # only store when can is updated
         continue
@@ -80,7 +84,7 @@ def load_and_process_rlogs(lrs, file_name):
               not sport_on and should_gather and engaged == last_engaged and  # creates uninterupted sections of engaged data
               abs(msg.logMonoTime - last_time) * 1e-9 < 1 / 20):  # also split if there's a break in time
         data[-1].append({'v_ego': v_ego, 'a_ego': a_ego, 'steering_angle': steering_angle, 'steering_rate': steering_rate,
-                         # 'steering_rate_fraction': steering_rate_fraction,
+                         'steering_rate_fraction': steering_rate_fraction, 'steering_fraction': steering_fraction, 'steering_angle_can': steering_angle_can,
                          'engaged': engaged, 'torque_cmd': torque_cmd, 'torque_eps': torque_eps, 'torque_driver': torque_driver,
                          'time': msg.logMonoTime * 1e-9})
       elif len(data[-1]):  # if last list has items in it, append new empty section

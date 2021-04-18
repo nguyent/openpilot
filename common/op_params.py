@@ -101,7 +101,7 @@ class opParams:
                         'dynamic_follow': Param('auto', str, static=True, hidden=True),
                         'model_use_rate': Param(True, bool, live=True),
                         'model_use_des_rate': Param(True, bool, live=True),
-                        'lat_p': Param(0.075, NUMBER, live=True),
+                        'p_multiplier': Param(1, NUMBER, live=True),
                         'lat_i': Param(0.01, NUMBER, live=True),
                         'lat_d': Param(0.0, NUMBER, live=True),
                         'global_df_mod': Param(1.0, NUMBER, 'The multiplier for the current distance used by dynamic follow. The range is limited from 0.85 to 2.5\n'

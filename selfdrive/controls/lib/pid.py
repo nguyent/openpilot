@@ -34,8 +34,8 @@ class LatPIDController():
 
   @property
   def k_p(self):
-    return self.op_params.get('lat_p')
-    return interp(self.speed, self._k_p[0], self._k_p[1])
+    # return self.op_params.get('lat_p')
+    return interp(self.speed, self._k_p[0], self._k_p[1]) * self.op_params.get('p_multiplier')
 
   @property
   def k_i(self):
@@ -68,25 +68,35 @@ class LatPIDController():
     self.control = 0
     self.errors = []
 
-  def convert_pid_gains(self, setpoint, measurement, error, pid):
-    _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10 = [0.010969681918287285, -1.317303952625088, 0.003090297042995128, 0.0006174063280014462, -0.11408303431617882, -0.004223466361442405, 0.5459159299542625, -0.4208442440715394, -0.016940226962729534, 1.1968717444641879]
-
-    if abs(setpoint) < abs(measurement) or setpoint * measurement < 0:
-      mod = _c1 * abs(error)
-      mod += _c3 * abs(setpoint)
-      mod += _c2
-    else:
-      mod = _c4 * abs(error)
-      mod += _c6 * abs(setpoint)
-      mod += _c5
-
+  def convert_pid_gains_simple(self, measurement, error, pid):
+    x = np.array([0, 5, 10]) * np.interp(abs(measurement), [0, 15], [.5, 1])
+    y = np.array([.15, .15, 1])
+    mod = np.interp(abs(error), x, y)  # mod will always be <= 1 for now
     new_pid = pid + pid * mod
 
-    weight = np.interp(abs(error), [0, _c7 * abs(measurement) + _c8], [1, 0])
-
+    weight = np.interp(self.speed * CV.MS_TO_MPH, [15, 40], [0.25, 1])
     pid = (new_pid * weight) + ((1 - weight) * pid)
-    pid *= (_c9 * self.speed + _c10)
     return pid
+
+  # def convert_pid_gains(self, setpoint, measurement, error, pid):
+  #   _c1, _c2, _c3, _c4, _c5, _c6, _c7, _c8, _c9, _c10 = [0.010969681918287285, -1.317303952625088, 0.003090297042995128, 0.0006174063280014462, -0.11408303431617882, -0.004223466361442405, 0.5459159299542625, -0.4208442440715394, -0.016940226962729534, 1.1968717444641879]
+  #
+  #   if abs(setpoint) < abs(measurement) or setpoint * measurement < 0:
+  #     mod = _c1 * abs(error)
+  #     mod += _c3 * abs(setpoint)
+  #     mod += _c2
+  #   else:
+  #     mod = _c4 * abs(error)
+  #     mod += _c6 * abs(setpoint)
+  #     mod += _c5
+  #
+  #   new_pid = pid + pid * mod
+  #
+  #   weight = np.interp(abs(error), [0, _c7 * abs(measurement) + _c8], [1, 0])
+  #
+  #   pid = (new_pid * weight) + ((1 - weight) * pid)
+  #   pid *= (_c9 * self.speed + _c10)
+  #   return pid
 
   def update(self, setpoint, measurement, speed=0.0, check_saturation=True, override=False, feedforward=0., deadzone=0., freeze_integrator=False):
     self.speed = speed
@@ -122,7 +132,7 @@ class LatPIDController():
     # y[-1] = y[-1] * np.interp(speed, [0, 80 * CV.MPH_TO_MS], [2.5, 1])
     # self.p *= np.interp(error, x, y)
 
-    new_pid = self.convert_pid_gains(setpoint, measurement, error, self.p + self.i + d)
+    new_pid = self.convert_pid_gains_simple(measurement, error, self.p + self.i + d)
 
     control = self.f + new_pid
     if self.convert is not None:

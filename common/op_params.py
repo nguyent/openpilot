@@ -99,8 +99,8 @@ class opParams:
 
     self.fork_params = {'camera_offset': Param(0.06, NUMBER, 'Your camera offset to use in lane_planner.py', live=True),
                         'dynamic_follow': Param('auto', str, static=True, hidden=True),
-                        'model_use_rate': Param(True, bool, live=True),
-                        'model_use_des_rate': Param(True, bool, live=True),
+                        # 'model_use_rate': Param(True, bool, live=True),
+                        # 'model_use_des_rate': Param(True, bool, live=True),
                         'p_multiplier': Param(1, NUMBER, live=True),
                         'lat_i': Param(0.01, NUMBER, live=True),
                         'lat_d': Param(0.0, NUMBER, live=True),

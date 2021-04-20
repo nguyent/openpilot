@@ -72,7 +72,7 @@ class LatPIDController():
     x = np.array([0, 5, 10]) * np.interp(abs(measurement), [0, 15], [.5, 1])
     y = np.array([.15, .15, 1])
     mod = np.interp(abs(error), x, y)  # mod will always be <= 1 for now
-    new_pid = pid + pid * mod
+    new_pid = pid * mod
 
     weight = np.interp(self.speed * CV.MS_TO_MPH, [15, 40], [0.25, 1])
     pid = (new_pid * weight) + ((1 - weight) * pid)

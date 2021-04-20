@@ -264,7 +264,7 @@ def load_data(to_normalize=False, plot_dists=False):  # filters and processes ra
   print(f'Angle mean, std: {data_stats["angle"].mean, data_stats["angle"].std}')
 
   data_generator = SyntheticDataGenerator(data, data_stats)
-  ADD_SYNTHETIC_SAMPLES = True  # fixme, this affects mean and std, but not min/max for normalizing
+  ADD_SYNTHETIC_SAMPLES = False  # fixme, this affects mean and std, but not min/max for normalizing
   if ADD_SYNTHETIC_SAMPLES:
 
     n_synthetic_samples = round(len(data) / 10)

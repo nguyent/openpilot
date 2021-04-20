@@ -69,12 +69,12 @@ class LatPIDController():
     self.errors = []
 
   def convert_pid_gains_simple(self, setpoint, measurement, error, pid):
-    if abs(setpoint) < abs(measurement) or setpoint * measurement < 0:  # falling
+    if True or abs(setpoint) < abs(measurement) or setpoint * measurement < 0:  # falling
       x = np.array([0, 5, 10]) * np.interp(abs(measurement), [0, 15], [.5, 1])
-      y = np.array([.3, .15, 1])  # * np.interp(speed * CV.MS_TO_MPH, [20, 35], [.5, 1])
-    else:  # rising
-      x = np.array([0, 5, 10]) * np.interp(abs(measurement), [0, 15], [.5, 1])
-      y = np.array([2, 1.2, 1])  # * np.interp(speed * CV.MS_TO_MPH, [20, 35], [.5, 1])
+      y = np.array([.9, .33, 1])  # * np.interp(speed * CV.MS_TO_MPH, [20, 35], [.5, 1])
+    # else:  # rising
+    #   x = np.array([0, 5, 10]) * np.interp(abs(measurement), [0, 15], [.5, 1])
+    #   y = np.array([2, 1.2, 1])  # * np.interp(speed * CV.MS_TO_MPH, [20, 35], [.5, 1])
 
     mod = np.interp(abs(error), x, y)  # mod will always be <= 1 for now
     new_pid = pid * mod

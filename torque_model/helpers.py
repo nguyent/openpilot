@@ -64,12 +64,14 @@ def model_feedforward(angle, speed):
 class LatControlPF:
   def __init__(self):
     # self.k_f = 0.00006908923778520113
-    self.k_f = 0.00005
+    # self.k_f = 0.00005
+    self.k_f = 0.000055
     self.speed = 0
 
   @property
   def k_p(self):
-    return interp(self.speed, [20 * CV.MPH_TO_MS, 70 * CV.MPH_TO_MS], [.05, .15])
+    # return interp(self.speed, [20 * CV.MPH_TO_MS, 70 * CV.MPH_TO_MS], [.05, .15])
+    return interp(self.speed, [15 * CV.MPH_TO_MS, 42.5 * CV.MPH_TO_MS, 70 * CV.MPH_TO_MS], [.055, 0.07, .1])
 
   def update(self, setpoint, measurement, speed):
     self.speed = speed
@@ -80,7 +82,8 @@ class LatControlPF:
     error = setpoint - measurement
 
     p = error * self.k_p
-    f = f * 3.768382789259873e-05  # self.k_f
+    # f = f * 3.768382789259873e-05  # self.k_f
+    f = f * self.k_f
 
     return p + f  # multiply by 1500 to get torque units
     # return np.clip(p + steer_feedforward, -1, 1)  # multiply by 1500 to get torque units
